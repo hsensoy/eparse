@@ -1,0 +1,7 @@
+# Build directory
+build
+
+# Archive directory
+*.zip
+*.tar
+*.tar.gz
