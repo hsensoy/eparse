@@ -1,6 +1,9 @@
 # Build directory
 build
 
+# Sample data directory
+data
+
 # Archive directory
 *.zip
 *.tar
