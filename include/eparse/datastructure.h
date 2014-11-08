@@ -9,6 +9,7 @@
 #ifndef Perceptron_GLM_NLP_Tasks_datastructure_h
 #define Perceptron_GLM_NLP_Tasks_datastructure_h
 #include <stdbool.h>
+#include <stdint.h>
 #include "epblas.h"
 
 /*

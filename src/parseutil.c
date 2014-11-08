@@ -52,11 +52,13 @@ ParserTestMetric testPerceptron (Perceptron_t mdl, const CoNLLCorpus corpus, boo
     int model[300];
 
     Progress_t ptested = NULL;
+	
+//	signal(SIGINT, intHandler);
 
 
-    EPARSE_CHECK_RETURN(newProgress(&ptested, "test sentences", DArray_count(corpus->sentences), 0.3))
+    CHECK_RETURN(newProgress(&ptested, "test sentences", DArray_count(corpus->sentences), 0.3))
 
-    for (int si = 0; si < DArray_count(corpus->sentences); si++) {
+    for (int si = 0; si < DArray_count(corpus->sentences) && keepRunning ; si++) {
         FeaturedSentence sent = DArray_get(corpus->sentences, si);
 
         debug("Test sentence %d (section %d) of length %d", si, sent->section, sent->length);
@@ -70,7 +72,7 @@ ParserTestMetric testPerceptron (Perceptron_t mdl, const CoNLLCorpus corpus, boo
 
         (metric->total_sentence)++;
         debug("Now comparing actual arcs with model generated arcs for sentence %d (Last sentence is %d)", si, sent->length);
-        for (int j = 0; j < sent->length; j++) {
+        for (int j = 0; j < sent->length  ; j++) {
             Word w = (Word) DArray_get(sent->words, j);
 
             w->predicted_parent = model[j + 1];

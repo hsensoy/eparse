@@ -55,7 +55,7 @@ int verbosity = 0;
 int num_rand_sv = 300000;
 
 
-Rate parser_rate = NULL;
+//Rate parser_rate = NULL;
 
 /*
  * 
@@ -109,33 +109,33 @@ int main(int argc, char** argv) {
     argc = argparse_parse(&argparse, argc, argv);
     
     int max_threads;
+	
+	eparseError_t status = getPerceptronMaxParallism(&max_threads);
+	
+	if ( status == eparseSucess ){
+		    log_info("There are max %d MKL threads", max_threads);
+			
+		    if (num_parallel_mkl_slaves == -1) {
 
-    EPARSE_CHECK_RETURN(getPerceptronMaxParallism(&max_threads))
-    log_info("There are max %d MKL threads", max_threads);
+		        num_parallel_mkl_slaves = (int) (max_threads * 0.9);
 
-    if (num_parallel_mkl_slaves == -1) {
+		        if (num_parallel_mkl_slaves == 0)
+		            num_parallel_mkl_slaves = 1;
 
-        num_parallel_mkl_slaves = (int) (max_threads * 0.9);
+		    }
+			
+		    log_info("Number of MKL Slaves is set to be %d", num_parallel_mkl_slaves);
+		    EPARSE_CHECK_RETURN(setPerceptronParallism(num_parallel_mkl_slaves))
+			
+		    bool dynamic = false;
+		    EPARSE_CHECK_RETURN(getPerceptronDynamicParallism(&dynamic));
 
-        if (num_parallel_mkl_slaves == 0)
-            num_parallel_mkl_slaves = 1;
-
-    }
-
-    log_info("Number of MKL Slaves is set to be %d", num_parallel_mkl_slaves);
-    setPerceptronParallism(num_parallel_mkl_slaves);
-
-    
-    //mkl_set_dynamic(0);
-    
-    bool dynamic = false;
-    EPARSE_CHECK_RETURN(getPerceptronDynamicParallism(&dynamic));
-    if (dynamic)
-        log_info("Intel MKL may use less than %i threads for a large problem", num_parallel_mkl_slaves);
-    else
-        log_info("Intel MKL should use %i threads for a large problem", num_parallel_mkl_slaves);
-    
-    
+		    if (dynamic)
+		        log_info("Intel MKL may use less than %i threads for a large problem", num_parallel_mkl_slaves);
+		    else
+		        log_info("Intel MKL should use %i threads for a large problem", num_parallel_mkl_slaves);
+	}
+       
     check(stage != NULL && (strcmp(stage, "optimize") == 0 || strcmp(stage, "train") == 0 || strcmp(stage, "parse") == 0),
             "Choose one of -s optimize, train, parse");
 
