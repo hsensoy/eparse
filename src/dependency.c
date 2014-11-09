@@ -127,7 +127,7 @@ void destroy_parent_table(int***** table, int length) {
     free(table);
 }
 
-void destroy_score_table(double**** table, int length) {
+void destroy_score_table(float**** table, int length) {
 
     for (int i = 0; i < length; i++) {
 
@@ -147,21 +147,21 @@ void destroy_score_table(double**** table, int length) {
     free(table);
 }
 
-double**** init_score_table(int length) {
+float**** init_score_table(int length) {
 
-    double**** table = (double****) malloc(sizeof (double***) * length);
+    float**** table = (float****) malloc(sizeof (float***) * length);
     check_mem(table);
 
     for (int i = 0; i < length; i++) {
-        table[i] = (double***) malloc(sizeof (double**) * length);
+        table[i] = (float***) malloc(sizeof (float**) * length);
         check_mem(table[i]);
 
         for (int j = 0; j < length; j++) {
-            table[i][j] = (double**) malloc(sizeof (double*) * 2);
+            table[i][j] = (float**) malloc(sizeof (float*) * 2);
             check_mem(table[i][j]);
 
             for (int k = 0; k < 2; k++) {
-                table[i][j][k] = (double*) calloc(2, sizeof (double));
+                table[i][j][k] = (float*) calloc(2, sizeof (float));
 
                 check_mem(table[i][j][k]);
             }
@@ -230,7 +230,7 @@ error:
 
 void add(int *t, int parent, int child) {
 
-    check(t[child] == -1, "Target can not have parent %d <- %u", child, t[child]);
+    check(t[child] == -1, "Target can not have parent %d <- %d", child, t[child]);
 
     t[child] = parent;
 
@@ -239,10 +239,54 @@ error:
     exit(1);
 }
 
+
+float ****E = NULL;
+int  *****P = NULL;
+
+int max_sentence_length = -1; 
+
 void parse(FeaturedSentence sent, int parents[]) {
     int length = DArray_count(sent->words);
-    double ****E = init_score_table(length + 1);
-    int *****P = init_parent_table(length + 1);
+	
+	    
+	if ( length > max_sentence_length ){
+		log_info("Growing eisner's tables from %d to %d", max_sentence_length , length);
+		
+		if ( max_sentence_length > 0)
+			destroy_score_table(E, max_sentence_length + 1);
+		
+		debug("\tScore table deleted");
+		
+		if ( max_sentence_length > 0 )
+			destroy_parent_table(P, max_sentence_length + 1);
+		
+		
+		debug("\tParent table deleted");
+		
+		E = init_score_table(length + 1);
+		
+		debug("\tScore table reinitialized");
+		P = init_parent_table(length + 1);
+		
+		debug("\tParent table reinitialized");
+		
+		max_sentence_length = length;
+	}else{
+		debug("reinitializing parent table of size %d(%d max size)", length, max_sentence_length);
+		
+	    for (int i = 0; i < length+1; i++) 
+	        for (int j = 0; j < length+1; j++) 
+	            for (int k = 0; k < 2; k++) 
+	                for (int t = 0; t < 2; t++) 
+	                    for (int q = 0; q < length+1; q++)
+	                        P[i][j][k][t][q] = -1;
+		
+	    for (int i = 0; i < length+1; i++)
+	        for (int j = 0; j < length+1; j++)
+	            for (int k = 0; k < 2; k++) 
+		            for (int q = 0; q < 2; q++) 
+		                E[i][j][k][q] = 0.0;
+	}
 
     for (int m = 1; m < length + 1; m++) {
         for (int s = 0; s < length + 1; s++) {
@@ -251,10 +295,10 @@ void parse(FeaturedSentence sent, int parents[]) {
             if (t > length)
                 break;
             else {
-                double bestscore = NEGATIVE_INFINITY;
+                float bestscore = NEGATIVE_INFINITY;
                 int bestq = -1;
                 for (int q = s; q < t; q++) {
-                    double score = E[s][q][1][0] + E[q + 1][t][0][0]
+                    float score = E[s][q][1][0] + E[q + 1][t][0][0]
                             + sent->adjacency_matrix[t][s];
 
                     if (score >= bestscore) {
@@ -274,7 +318,7 @@ void parse(FeaturedSentence sent, int parents[]) {
                 bestscore = NEGATIVE_INFINITY;
                 bestq = -1;
                 for (int q = s; q < t; q++) {
-                    double score = E[s][q][1][0] + E[q + 1][t][0][0]
+                    float score = E[s][q][1][0] + E[q + 1][t][0][0]
                             + sent->adjacency_matrix[s][t];
 
                     if (score >= bestscore) {
@@ -295,7 +339,7 @@ void parse(FeaturedSentence sent, int parents[]) {
                 bestscore = NEGATIVE_INFINITY;
                 bestq = -1;
                 for (int q = s; q < t; q++) {
-                    double score = E[s][q][0][0] + E[q][t][0][1];
+                    float score = E[s][q][0][0] + E[q][t][0][1];
 
                     if (score >= bestscore) {
                         bestscore = score;
@@ -313,7 +357,7 @@ void parse(FeaturedSentence sent, int parents[]) {
                 bestscore = NEGATIVE_INFINITY;
                 bestq = -1;
                 for (int q = s + 1; q <= t; q++) {
-                    double score = E[s][q][1][1] + E[q][t][1][0];
+                    float score = E[s][q][1][1] + E[q][t][1][0];
 
                     if (score >= bestscore) {
                         bestscore = score;
@@ -346,10 +390,9 @@ void parse(FeaturedSentence sent, int parents[]) {
 
     //exit(1);
 
-    destroy_score_table(E, length + 1);
+    
     //destroy_arc_table(A, sent->length);
 
-    destroy_parent_table(P, length + 1);
 
     //    DArray_clear_destroy(gc);
 
@@ -638,7 +681,7 @@ void update_alpha(Perceptron_t kp, int sidx, int from, int to, struct FeaturedSe
         svKey = _nextval++;
     }
     
-    EPARSE_CHECK_RETURN(update(kp,v,svKey,inc));
+	EPARSE_CHECK_RETURN(update(kp,v,svKey,inc));
 
 }
 
@@ -673,7 +716,7 @@ void trainPerceptronOnce(Perceptron_t mdl, const CoNLLCorpus corpus, int max_rec
 
     Progress_t pparse = NULL;
 
-    EPARSE_CHECK_RETURN(newProgress(&pparse, "training sentences", ntraining, 0.04))
+    CHECK_RETURN(newProgress(&pparse, "training sentences", ntraining, 0.04))
 
 
     for (int si = 0; si < ntraining; si++) {
@@ -722,12 +765,9 @@ void trainPerceptronOnce(Perceptron_t mdl, const CoNLLCorpus corpus, int max_rec
         int nsuccess;
 
     
- 
-        if(mdl->type == KERNEL_PERCEPTRON){
-            (((KernelPerceptron_t)mdl->pDeriveObj)->c)++;
-        }else{
-            //TODO: ?
-        }
+		check(mdl->type == KERNEL_PERCEPTRON, "Unknown kernel type %d",mdl->type );
+
+        (((KernelPerceptron_t)mdl->pDeriveObj)->c)++;
         
 
         //free_feature_matrix(corpus, si);
@@ -742,7 +782,10 @@ void trainPerceptronOnce(Perceptron_t mdl, const CoNLLCorpus corpus, int max_rec
             log_info("Running training accuracy %lf after %d sentence.", (match * 1.) / total, si + 1);
 
             if (mdl->type == KERNEL_PERCEPTRON){
-                long nsv = ((KernelPerceptron_t)mdl->pDeriveObj)->kernel->matrix->nrow;
+				/*
+					TODO Implement a get nsv function.
+				*/
+                long nsv = ((KernelPerceptron_t)mdl->pDeriveObj)->kernel->matrix->ncol;	
                 log_info("%ld (%f of total %ld) support vectors", nsv, (nsv * 1.) / max_sv, max_sv);
             }
                 
@@ -752,7 +795,7 @@ void trainPerceptronOnce(Perceptron_t mdl, const CoNLLCorpus corpus, int max_rec
     
     log_info("Running training accuracy %lf", (match * 1.) / total);
     if (mdl->type == KERNEL_PERCEPTRON){
-        long nsv = ((KernelPerceptron_t)mdl->pDeriveObj)->kernel->matrix->nrow;
+        long nsv = ((KernelPerceptron_t)mdl->pDeriveObj)->kernel->matrix->ncol;
         log_info("%ld (%f of total %ld) support vectors", nsv, (nsv * 1.) / max_sv, max_sv);
     }
 
@@ -769,6 +812,9 @@ void trainPerceptronOnce(Perceptron_t mdl, const CoNLLCorpus corpus, int max_rec
     deleteVector(dummy_v);
 
     return;
+	
+error:
+	exit(1);
 }
 
 /*

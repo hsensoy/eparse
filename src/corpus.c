@@ -247,6 +247,11 @@ void free_CoNLLCorpus(CoNLLCorpus corpus, bool free_feature_matrix) {
         offset+=(source)->n;                                                                 \
 }
 
+#define CONCAT_CARRAY(target, array, n){                                                    \
+        memcpy( ((target)->data) + offset, array, (n * sizeof(float)));   \
+        offset+=n;                                                                 \
+}
+
 #define CONCAT_SINGLE_REF(target, value){                          \
         memcpy( ((target)->data) + offset, &(value), sizeof(float));   \
         offset+=1;                                                   \
@@ -266,8 +271,8 @@ void free_CoNLLCorpus(CoNLLCorpus corpus, bool free_feature_matrix) {
  *                      When a non-NULL vector is given vlinear/vquadratic functions simply perform a copy operation with no new allocation.
  * @return 
  */
+   
 eparseError_t embedding_feature(FeaturedSentence sent, int from, int to, Vector_t target) {
-    Vector_t avg_v = NULL;
     
     IS_ARC_VALID(from, to, sent->length);
 
@@ -294,9 +299,6 @@ eparseError_t embedding_feature(FeaturedSentence sent, int from, int to, Vector_
                 CONCAT_EMBEDDING(target, ((Word) DArray_get(sent->words, to + pattern->offset - 1))->embedding)
             else 
                 CONCAT_EMBEDDING(target, Root->embedding)
-            
-
-
         }
         else if (pattern->node == 'w') {
 
@@ -336,14 +338,16 @@ eparseError_t embedding_feature(FeaturedSentence sent, int from, int to, Vector_
 
                 for (int i = 0; i < 9; i++)
                     if (abs(from - to) > threshold_arr[i])
-                        threshold_flag[i] = 1;
+                        threshold_flag[i] = 1.;
                     else
-                        threshold_flag[i] = 0;
+                        threshold_flag[i] = 0.;
                 
                 
-                newInitializedCPUVector(&distance_v, "from-to distance vector", 9, matrixInitCArray,threshold_flag,NULL)
+                //newInitializedCPUVector(&distance_v, "from-to distance vector", 9, matrixInitCArray,threshold_flag,NULL)
                 
-                CONCAT_EMBEDDING(target, distance_v)
+                //CONCAT_EMBEDDING(target, distance_v)
+					
+				CONCAT_CARRAY(target, threshold_flag, 9)
 
             }
             else if (pattern->subnode == 'r') {
@@ -423,9 +427,11 @@ eparseError_t embedding_feature(FeaturedSentence sent, int from, int to, Vector_
     // Add the bias term
     CONCAT_SINGLE_VALUE(target,1.)
 
-            /*
-             * TODO: Primal solution requires those functions
-             
+
+		/*
+			TODO Implement primal solution.
+		*/
+            /* 
     switch (etransform) {
         case LINEAR:
             return vlinear(target, bigvector);
@@ -538,9 +544,37 @@ void setAdjacencyMatrix(CoNLLCorpus corpus, int sentence_idx, Perceptron_t kp, b
 
     if (sentence->adjacency_matrix == NULL)
         sentence->adjacency_matrix = square_adjacency_matrix(length + 1, NEGATIVE_INFINITY);
+	
+#ifdef	BATCH_SCORE
+	Matrix_t all = NULL;
+	Vector_t vscore = NULL;
+	
+    for (int _from = 0; _from <= length; _from++) {
+        for (int _to = 1; _to <= length; _to++)
+            if (_to != _from) {
 
+                EPARSE_CHECK_RETURN(embedding_feature(sentence, _from, _to, xformed_embedding_v))
+					
+				EPARSE_CHECK_RETURN(hstack(&all, memoryCPU, "all embeddings", xformed_embedding_v, false, false))
+            }
 
-
+    }
+	
+	debug("hstack is done");
+	
+	EPARSE_CHECK_RETURN(scoreBatch(kp, all, use_avg_alpha, &(vscore)))
+		
+	long idx = 0;
+    for (int _from = 0; _from <= length; _from++) {
+        for (int _to = 1; _to <= length; _to++)
+            if (_to != _from) {
+                (sentence->adjacency_matrix)[_from][_to] = (vscore->data)[idx++];
+            }
+    }
+	
+	deleteMatrix(all);
+	deleteVector(vscore);
+#else
 
     for (int _from = 0; _from <= length; _from++) {
         for (int _to = 1; _to <= length; _to++)
@@ -548,11 +582,12 @@ void setAdjacencyMatrix(CoNLLCorpus corpus, int sentence_idx, Perceptron_t kp, b
 
                 EPARSE_CHECK_RETURN(embedding_feature(sentence, _from, _to, xformed_embedding_v))
 
-                EPARSE_CHECK_RETURN(score(kp, xformed_embedding_v, use_avg_alpha, &((sentence->adjacency_matrix)[_from][_to])))
+			    EPARSE_CHECK_RETURN(score(kp, xformed_embedding_v, use_avg_alpha, &((sentence->adjacency_matrix)[_from][_to])))
 
             }
 
     }
+#endif
 
 
 }

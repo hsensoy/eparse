@@ -13,11 +13,10 @@
 #include "corpus.h"
 #include "datastructure.h"
 #include "stringalgo.h"
+#include "util.h"
 #include "perceptron.h"
 
-
 #include <math.h>
-#include <x86intrin.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include <string.h>
