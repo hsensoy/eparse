@@ -94,7 +94,7 @@ typedef struct EmbeddingPattern* EmbeddingPattern;
 
 
 CoNLLCorpus create_CoNLLCorpus(const char* base_dir, DArray *sections, int embedding_dimension, DArray* discrete_patterns) ;
-void read_corpus(CoNLLCorpus coprus, bool build_feature_matrix);
+void read_corpus(CoNLLCorpus coprus, int max_sent, bool build_feature_matrix);
 
 void free_CoNLLCorpus(CoNLLCorpus corpus, bool free_feature_matrix);
 

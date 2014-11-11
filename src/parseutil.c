@@ -72,6 +72,7 @@ ParserTestMetric testPerceptron (Perceptron_t mdl, const CoNLLCorpus corpus, boo
 
         (metric->total_sentence)++;
         debug("Now comparing actual arcs with model generated arcs for sentence %d (Last sentence is %d)", si, sent->length);
+		int pmatch_nopunc = 0, ptotal_nopunc = 0, pmatch = 0;
         for (int j = 0; j < sent->length  ; j++) {
             Word w = (Word) DArray_get(sent->words, j);
 
@@ -89,7 +90,6 @@ ParserTestMetric testPerceptron (Perceptron_t mdl, const CoNLLCorpus corpus, boo
 
             debug("\tTrue parent of word %d (with %s:%s) is %d whereas estimated parent is %d", j + 1, w->postag, w->form, w->parent, model[j + 1]);
 
-            int pmatch_nopunc = 0, ptotal_nopunc = 0, pmatch = 0;
             if (strcmp(w->postag, ",") != 0 && strcmp(w->postag, ":") != 0 && strcmp(w->postag, ".") != 0 && strcmp(w->postag, "``") != 0 && strcmp(w->postag, "''") != 0) {
 
                 if (w->parent == model[j + 1]) {
@@ -102,22 +102,23 @@ ParserTestMetric testPerceptron (Perceptron_t mdl, const CoNLLCorpus corpus, boo
                 (metric->without_punc->total_prediction)++;
             }
 
-            if (pmatch_nopunc == ptotal_nopunc && pmatch_nopunc != 0) {
-                (metric->complete_sentence_without_punc)++;
-            }
-
-
+     
             (metric->all->total_prediction)++;
 
             if (w->parent == model[j + 1]) {
                 pmatch++;
                 (metric->all->true_prediction)++;
             }
-
-            if (pmatch == sent->length && pmatch != 0)
-                (metric->complete_sentence)++;
         }
-
+		
+        if (pmatch_nopunc == ptotal_nopunc && pmatch_nopunc != 0) {
+            (metric->complete_sentence_without_punc)++;
+        }
+		
+        if (pmatch == sent->length) {
+            (metric->complete_sentence)++;
+        }
+		
         if (model_ofp != NULL) {
             fprintf(model_ofp, "\n");
         }
@@ -156,16 +157,18 @@ Perceptron_t optimize(int max_numit, int max_rec, const char* path, const char* 
     CoNLLCorpus train = create_CoNLLCorpus(path, train_sections, embedding_dimension, NULL);
 
     log_info("Reading training corpus");
-    read_corpus(train, false);
+    read_corpus(train, max_rec, false);
 
     log_info("Reading dev corpus");
-    read_corpus(dev, false);
+    read_corpus(dev, -1, false);
 
     float *numit_dev_avg = (float*) malloc(sizeof (float)* max_numit);
     float *numit_train_avg = (float*) malloc(sizeof (float)*max_numit);
+	long *numit_num_sv = (long*) malloc(sizeof (long)*max_numit);
 
     check(numit_dev_avg != NULL, "Memory allocation failed for numit_dev_avg");
     check(numit_train_avg != NULL, "Memory allocation failed for numit_train_avg");
+	check(numit_num_sv != NULL, "Memory allocation failed for numit_num_sv");
 
     Perceptron_t model = NULL;
     
@@ -210,6 +213,9 @@ Perceptron_t optimize(int max_numit, int max_rec, const char* path, const char* 
         double dev_acc = (dev_metric->without_punc->true_prediction * 1.) / dev_metric->without_punc->total_prediction;
         numit_dev_avg[numit - 1] = dev_acc;
         numit_train_avg[numit - 1] = 0.0;
+		
+		if ( model->type == KERNEL_PERCEPTRON )
+			numit_num_sv[ numit - 1 ] = ((KernelPerceptron_t)model->pDeriveObj)->kernel->matrix->ncol;	
 
         freeParserTestMetric(dev_metric);
 
@@ -231,9 +237,9 @@ Perceptron_t optimize(int max_numit, int max_rec, const char* path, const char* 
         }
     }
 
-    log_info("Iteration\tAccuracy(dev)\tAccuracy(train)");
+    log_info("Iteration\tAccuracy(dev)\tAccuracy(train)\t# of SV");
     for (int i = 0; i < numit - 1; i++) {
-        log_info("%d\t\t%f\t%f%s", i + 1, numit_dev_avg[i], numit_train_avg[i], (i + 1 == best_iter) ? " (*)" : "");
+        log_info("%d\t\t%f\t%f\t%ld%s", i + 1, numit_dev_avg[i], numit_train_avg[i], numit_num_sv[i], (i + 1 == best_iter) ? " (*)" : "");
     }
 
     //free_CoNLLCorpus(dev, true);
@@ -259,7 +265,7 @@ void parseall(Perceptron_t model, const char* path, const char* test_sections_st
     CoNLLCorpus test = create_CoNLLCorpus(path, test_sections, embedding_dimension, NULL);
 
     log_info("Reading test corpus");
-    read_corpus(test, false);
+    read_corpus(test, -1,false);
 
     char* output_filename = (char*) malloc(sizeof (char) * (strlen(modelname) + 13));
     check_mem(output_filename);
