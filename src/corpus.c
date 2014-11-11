@@ -770,15 +770,20 @@ error:
     exit(1);
 }
 
-void read_corpus(CoNLLCorpus corpus, bool build_feat_matrix) {
+void read_corpus(CoNLLCorpus corpus,int max_sent,  bool build_feat_matrix) {
     DArray* files = find_corpus_files(corpus->base_dir, corpus->sections);
 
     char *line = NULL;
     size_t len = 0;
+	
+	int sentCount = 0;
+	
+	bool done = false;
 
     FeaturedSentence sent = FeatureSentence_create();
+	
 
-    for (int i = 0; i < DArray_count(files); i++) {
+    for (int i = 0; i < DArray_count(files) && !done; i++) {
         ssize_t read;
         conll_file_t file = (conll_file_t) DArray_get(files, i);
 
@@ -796,6 +801,13 @@ void read_corpus(CoNLLCorpus corpus, bool build_feat_matrix) {
             else {
                 sent->section = file->section;
                 DArray_push(corpus->sentences, sent);
+				
+				if (max_sent > 0)
+					sentCount++;
+					if (sentCount == max_sent){
+						done = true;
+						break;
+					}
 
                 //debug("One more sentence is added into corpus...");
 

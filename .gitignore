@@ -8,3 +8,7 @@ data
 *.zip
 *.tar
 *.tar.gz
+
+# Model and corpus file
+*.model
+*.conll
