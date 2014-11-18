@@ -14,10 +14,12 @@ long max_narc = 0;
 
 static Vector_t embedding_v = NULL;
 static Vector_t xformed_embedding_v = NULL;
-static float zero = 0.;
+static float zero = 0.f;
 
 static Vector_t avg_v = NULL;
 static Vector_t distance_v = NULL;
+
+
 
 /**
  * ai-parse.c file for actual storage allocation for those two variables
@@ -121,7 +123,7 @@ Word ROOT(int dim) {
         Root->parent = -1;
         Root->embedding = NULL;
         
-        newInitializedCPUVector(&(Root->embedding), "Root Embedding",dim,matrixInitNone,NULL,NULL)
+        newInitializedCPUVector(&(Root->embedding), "Root Embedding",dim,matrixInitFixed,&zero,NULL)
               
     }
 
