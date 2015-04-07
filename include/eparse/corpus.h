@@ -38,7 +38,7 @@
 //static const char* ROOT = "root";
 
 
-#define IS_ARC_VALID(from,to, length) check((from) != (to) && (from) <= (length) && (from) >= 0 && (to)>= 1 && (to) <= (length), "Arc between suspicious words %d to %d for sentence length %d", (from), (to), (length))
+#define IS_ARC_VALID(from,to, length,section) check((from) != (to) && (from) <= (length) && (from) >= 0 && (to)>= 1 && (to) <= (length), "Arc between suspicious words %d to %d for section %u sentence length %d", (from), (to),(section), (length))
 
 struct Word {
     int id;

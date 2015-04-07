@@ -8,3 +8,6 @@ data
 *.zip
 *.tar
 *.tar.gz
+
+*.conll
+*.model
