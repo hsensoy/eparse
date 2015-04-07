@@ -9,7 +9,7 @@ conll_file_t create_CoNLLFile(const char* conll_basedir, int conll_section, cons
     check(file != NULL, "Allocation error in CoNLL file");
     
     
-    file->section_dir = (char*)malloc(sizeof(char) * ( strlen(conll_basedir) + 1 + 2));
+    file->section_dir = (char*)malloc(sizeof(char) * ( strlen(conll_basedir) + 1 + 3));
     check(file->section_dir != NULL, "Allocation error in section directory");
     
     file->section = conll_section;
@@ -17,7 +17,7 @@ conll_file_t create_CoNLLFile(const char* conll_basedir, int conll_section, cons
     
     file->file = strdup(conll_file);
     
-    file->fullpath = (char*)malloc(sizeof(char) * ( strlen(file->section_dir) + 1 + strlen(file->file)));
+    file->fullpath = (char*)malloc(sizeof(char) * ( strlen(file->section_dir) + 1 + 1 + strlen(file->file)));
     check(file->fullpath != NULL, "Allocation error in CoNLL full path");
     
     sprintf(file->fullpath, "%s/%s", file->section_dir, file->file);

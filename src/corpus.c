@@ -276,7 +276,7 @@ void free_CoNLLCorpus(CoNLLCorpus corpus, bool free_feature_matrix) {
    
 eparseError_t embedding_feature(FeaturedSentence sent, int from, int to, Vector_t target) {
     
-    IS_ARC_VALID(from, to, sent->length);
+    IS_ARC_VALID(from, to, sent->length,sent->section);
 
     newInitializedCPUVector(&target, "Embedding Vector", target->n, matrixInitFixed, &zero, NULL)
 
@@ -790,7 +790,7 @@ void read_corpus(CoNLLCorpus corpus,int max_sent,  bool build_feat_matrix) {
         conll_file_t file = (conll_file_t) DArray_get(files, i);
 
         FILE *fp = fopen(file->fullpath, "r");
-        check_mem(fp);
+        check(fp != NULL,"%s could not opened",file->fullpath);
 
         while ((read = getline(&line, &len, fp)) != -1) {
 
