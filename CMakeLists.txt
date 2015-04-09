@@ -6,7 +6,7 @@ SET( PROJ_OUT_PATH  ${CMAKE_BINARY_DIR} )
 FILE( GLOB_RECURSE PROJ_SOURCES src/*.c )
 #FILE( GLOB_RECURSE PROJ_HEADERS include/${PROJ_NAME}/*.h)
 SET( PROJ_INCLUDES "include" "include/eparse"  "/usr/local/include/perceptron/epblas" "/usr/local/include/perceptron" "/usr/local/include/shared")
-SET( PROJ_LIBRARIES "/usr/local/lib/shared/libshared.a" )
+SET( PROJ_LIBRARIES "/usr/local/lib/shared/libshared.a" "m" "/usr/local/lib/libperceptroncuda.so")
 
 SET( CMAKE_EXE_LINKER_FLAGS " -O3 -std=gnu99 -L/usr/local/lib -lperceptroncuda -lm" CACHE STRING "" FORCE )
 SET( CMAKE_C_FLAGS "-std=gnu99  -O3 -g -DBATCH_SCORE -DNDEBUG")

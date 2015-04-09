@@ -309,6 +309,8 @@ void parse(FeaturedSentence sent, int parents[]) {
 
                 E[s][t][0][1] = bestscore;
 
+		debug("Best score %f with bestq %d for %d %d",bestscore, bestq,s,t);
+
                 addAll(P[s][t][0][1], P[s][bestq][1][0], length + 1);
                 addAll(P[s][t][0][1], P[bestq + 1][t][0][0], length + 1);
 

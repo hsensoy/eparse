@@ -570,6 +570,7 @@ void setAdjacencyMatrix(CoNLLCorpus corpus, int sentence_idx, Perceptron_t kp, b
     for (int _from = 0; _from <= length; _from++) {
         for (int _to = 1; _to <= length; _to++)
             if (_to != _from) {
+		debug("Score[%d,%d]=%f",_from,_to,(vscore->data)[idx++]);
                 (sentence->adjacency_matrix)[_from][_to] = (vscore->data)[idx++];
             }
     }
