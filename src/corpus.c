@@ -25,7 +25,9 @@ static Vector_t distance_v = NULL;
  * ai-parse.c file for actual storage allocation for those two variables
  */
 extern const char *epattern;
-extern enum EmbeddingTranformation etransform;
+extern  FeatureTransformer_t ft;
+extern enum FeatureTransform  etransform;
+
 extern float rbf_lambda;
 extern int edimension;
 
@@ -196,6 +198,7 @@ CoNLLCorpus create_CoNLLCorpus(const char* base_dir, DArray *sections, int embed
     newInitializedCPUVector(&embedding_v, "Embedding Vector", embedding_concat_length, matrixInitFixed, &zero, NULL)
 
     corpus->transformed_embedding_length = embedding_concat_length;
+    /*
     if (etransform == QUADRATIC)
         corpus->transformed_embedding_length = ((corpus->transformed_embedding_length) * (corpus->transformed_embedding_length + 1)) / 2;
     else if (etransform == CUBIC) {
@@ -210,6 +213,7 @@ CoNLLCorpus create_CoNLLCorpus(const char* base_dir, DArray *sections, int embed
 
         corpus->transformed_embedding_length = emprical_xform_length;
     }
+     */
 
     
     newInitializedCPUVector(&xformed_embedding_v, "Transformed Embedding Vector", corpus->transformed_embedding_length, matrixInitFixed, &zero, NULL)
@@ -429,25 +433,6 @@ eparseError_t embedding_feature(FeaturedSentence sent, int from, int to, Vector_
     // Add the bias term
     CONCAT_SINGLE_VALUE(target,1.)
 
-
-		/*
-			TODO Implement primal solution.
-		*/
-            /* 
-    switch (etransform) {
-        case LINEAR:
-            return vlinear(target, bigvector);
-            break;
-        case QUADRATIC:
-            return vquadratic(target, bigvector, 1);
-            break;
-        case CUBIC:
-            return vcubic(target, bigvector, target->n);
-            break;
-    }
-              */
-    
-   
     return eparseSucess;
     
     error:
@@ -563,8 +548,26 @@ void setAdjacencyMatrix(CoNLLCorpus corpus, int sentence_idx, Perceptron_t kp, b
     }
 	
 	debug("hstack is done");
-	
-	EPARSE_CHECK_RETURN(scoreBatch(kp, all, use_avg_alpha, &(vscore)))
+
+    if (ft != NULL){
+        Matrix_t all_nl = NULL;
+
+
+        debug("Transforming batch...");
+        EPARSE_CHECK_RETURN(transformBatch(ft,all, &all_nl))
+        debug("Transformed batch...");
+
+        EPARSE_CHECK_RETURN(scoreBatch(kp, all_nl, use_avg_alpha, &(vscore)))
+
+        //printMatrix("Scores", vscore,stdout);
+
+        deleteMatrix(all_nl);
+    }
+    else
+    {
+
+        EPARSE_CHECK_RETURN(scoreBatch(kp, all, use_avg_alpha, &(vscore)))
+    }
 		
 	long idx = 0;
     for (int _from = 0; _from <= length; _from++) {

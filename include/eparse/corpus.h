@@ -23,6 +23,7 @@
 //#include "dependency.h"
 
 #include "conll.h"
+#include "featuretransform.h"
 
 
 
@@ -77,11 +78,6 @@ typedef struct CoNLLCorpus* CoNLLCorpus;
 
 
 
-enum EmbeddingTranformation{
-    CUBIC,
-    QUADRATIC,
-    LINEAR
-};
 
 struct EmbeddingPattern {
     int offset;
