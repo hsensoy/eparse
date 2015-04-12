@@ -12,6 +12,7 @@
 #include "parseutil.h"
 #include "dependency.h"
 #include "perceptron.h"
+#include "featuretransform.h"
 
 #include <string.h>
 
@@ -21,8 +22,9 @@
 #define DEFAULT_MAX_NUMIT 50
 #define DEFAULT_TRAINING_SECTION_STR "2-22"
 #define DEFAULT_DEV_SECTION_STR "22"
-#define DEFAULT_EMBEDDING_TRANFORMATION LINEAR
+#define DEFAULT_EMBEDDING_TRANFORMATION KERNAPROX_NONE
 #define DEFAULT_KERNEL POLYNOMIAL_KERNEL
+#define DEFAULT_MAX_FEATURE_NUM 100000
 
 static const char *const usage[] = {
     "ai-parse [options] [[--] args]",
@@ -36,7 +38,7 @@ static const char *const usage[] = {
  * 
  */
 const char *epattern = NULL;
-enum EmbeddingTranformation etransform = DEFAULT_EMBEDDING_TRANFORMATION;
+enum FeatureTransform etransform = DEFAULT_EMBEDDING_TRANFORMATION;
 
 enum PerceptronType type = KERNEL_PERCEPTRON;
 enum KernelType kernel = POLYNOMIAL_KERNEL;
@@ -53,6 +55,8 @@ int edimension = 0;
 int verbosity = 0;
 
 int num_rand_sv = 300000;
+
+FeatureTransformer_t ft = NULL;
 
 
 //Rate parser_rate = NULL;
@@ -75,6 +79,8 @@ int main(int argc, char** argv) {
     const char *kernel_str = NULL;
     const char *rbf_lambda_str = NULL;
 
+    long nfeatures = DEFAULT_MAX_FEATURE_NUM;
+
 #ifdef NDEBUG
     log_info("ai-parse %s (Release)", VERSION);
 #else
@@ -94,12 +100,13 @@ int main(int argc, char** argv) {
         OPT_STRING('e', "epattern", &epattern, "Embedding Patterns", NULL),
         OPT_INTEGER('l', "edimension", &edimension, "Embedding dimension", NULL),
         OPT_INTEGER('m', "maxrec", &maxrec, "Maximum number of training instance", NULL),
+        OPT_INTEGER('f', "maxfeat", &nfeatures, "Maximum number of features (including linear and non-linear ones)", NULL),
         OPT_STRING('x', "etransform", &etransform_str, "Embedding Transformation", NULL),
         OPT_STRING('k', "kernel", &kernel_str, "Kernel Type", NULL),
         OPT_INTEGER('a', "bias", &bias, "Polynomial kernel additive term. Default is 1", NULL),
         OPT_INTEGER('c', "concurrency", &num_parallel_mkl_slaves, "Parallel MKL Slaves. Default is 90% of all machine cores", NULL),
         OPT_INTEGER('b', "degree", &polynomial_degree, "Degree of polynomial kernel. Default is 4", NULL),
-        OPT_STRING('z', "lambda", &rbf_lambda_str, "Lambda multiplier for RBF Kernel.Default value is 0.025"),
+        OPT_STRING('z', "sigma", &rbf_lambda_str, "Sigma multiplier for RBF Kernel.Default value is 0.025"),
         OPT_STRING('u', "budget_type", &budget_type_str, "Budget control methods. NONE|RANDOM", NULL),
         OPT_INTEGER('g', "budget_size", &budget_target, "Budget Target for budget based perceptron algorithms. Default 50K", NULL),
         OPT_END(),
@@ -176,16 +183,22 @@ int main(int argc, char** argv) {
 
     check(epattern != NULL, "Embedding pattern is required for -s optimize,train,parse");
 
+    if (rbf_lambda_str != NULL) {
+        rbf_lambda = (float) atof(rbf_lambda_str);
+    }
+
     if (etransform_str == NULL) {
         log_info("Embedding transformation is set to be QUADRATIC");
 
         etransform = DEFAULT_EMBEDDING_TRANFORMATION;
     } else if (strcmp(etransform_str, "LINEAR") == 0) {
-        etransform = LINEAR;
-    } else if (strcmp(etransform_str, "QUADRATIC") == 0) {
-        etransform = QUADRATIC;
-    } else if (strcmp(etransform_str, "CUBIC") == 0) {
-        etransform = CUBIC;
+        etransform = KERNAPROX_NONE;
+    } else if (strcmp(etransform_str, "POLY") == 0) {
+        etransform = KERNAPROX_EXACT_POLY;
+    } else if (strcmp(etransform_str, "RBF") == 0) {
+        etransform = KERNAPROX_RBF_SAMPLER;
+
+        ft = newRBFSampler(nfeatures, rbf_lambda);
     } else {
         log_err("Unsupported transformation type for embedding %s", etransform_str);
     }
@@ -199,6 +212,8 @@ int main(int argc, char** argv) {
         }
     }
 
+
+
     if (kernel_str != NULL) {
         if (strcmp(kernel_str, "POLYNOMIAL") == 0) {
 
@@ -207,10 +222,6 @@ int main(int argc, char** argv) {
             kernel = POLYNOMIAL_KERNEL;
             type = KERNEL_PERCEPTRON;
         } else if (strcmp(kernel_str, "GAUSSIAN") == 0 || strcmp(kernel_str, "RBF") == 0) {
-
-            if (rbf_lambda_str != NULL) {
-                rbf_lambda = (float) atof(rbf_lambda_str);
-            }
 
             log_info("RBF/GAUSSIAN kernel will be used with lambda %f ", rbf_lambda);
 
@@ -223,6 +234,8 @@ int main(int argc, char** argv) {
             goto error;
         }
     }else{
+        log_info("Simple perceptron will be used. ");
+
         type = SIMPLE_PERCEPTRON;
     }
 

@@ -1,6 +1,9 @@
 # Build directory
 build
 
+# CLion directory
+.idea
+
 # Sample data directory
 data
 
