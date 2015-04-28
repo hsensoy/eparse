@@ -548,19 +548,22 @@ void setAdjacencyMatrix(CoNLLCorpus corpus, int sentence_idx, Perceptron_t kp, b
 	debug("hstack is done");
 
         if (ft != NULL){
-            Matrix_t all_nl = NULL;
+            
 
             #ifdef OPTIMIZED_TRANSFORMATION
-                EPARSE_CHECK_RETURN(scoreBatch(kp, all_nl, use_avg_alpha, &(vscore)))
+                EPARSE_CHECK_RETURN(scoreBatch(kp, all, use_avg_alpha, &(vscore)))
             #else
+                Matrix_t all_nl = NULL;
                 debug("Transforming batch...");
                 EPARSE_CHECK_RETURN(transformBatch(ft,all, &all_nl))
                 debug("Transformed batch...");
 
                 EPARSE_CHECK_RETURN(scoreBatch(kp, all_nl, use_avg_alpha, &(vscore)))
+                
+                deleteMatrix(all_nl);
             #endif
 
-            deleteMatrix(all_nl);
+            
         }
         else
         {
