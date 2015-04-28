@@ -549,7 +549,7 @@ for(int j = left_context + 1; j < right_context;j++){
  */
 Perceptron_t create_PerceptronModel(size_t transformed_embedding_length) {
 
-    Perceptron_t model = newSimplePerceptron();
+    Perceptron_t model = newSimplePerceptron(NULL);
 
     return model;
 
