@@ -548,71 +548,13 @@ for(int j = left_context + 1; j < right_context;j++){
 }
  */
 Perceptron_t create_PerceptronModel(size_t transformed_embedding_length) {
-    /*
-    PerceptronModel model = (PerceptronModel) malloc(sizeof (struct PerceptronModel));
-    check_mem(model);
 
-    model->embedding_w = NULL;
-    model->discrete_w = NULL;
-
-    model->c = 1;
-
-    //FeatureMatrix mat = training->feature_matrix_singleton;
-
-    if (transformed_embedding_length > 0) {
-        
-         * TODO: Re implement with libperceptronmkl
-        model->embedding_w = vector_create(transformed_embedding_length);
-        model->embedding_w_avg = vector_create(transformed_embedding_length);
-        model->embedding_w_temp = vector_create(transformed_embedding_length);
-        model->embedding_w_best = vector_create(transformed_embedding_length);
-         
-
-        log_info("Embedding features of %ld dimension", model->embedding_w->n);
-    }
-    else {
-        model->embedding_w = NULL;
-        model->embedding_w_avg = NULL;
-        model->embedding_w_temp = NULL;
-    }
-
-    
-    if (training->disrete_patterns_parts) {
-        model->discrete_w = vector_create(iif->feature_id);
-        model->discrete_w_avg = vector_create(iif->feature_id);
-        model->discrete_w_temp = vector_create(iif->feature_id);
-
-        log_info("Discrete features of %ld dimension", model->discrete_w->n);
-    } else {
-        model->discrete_w = NULL;
-        model->discrete_w_avg = NULL;
-        model->discrete_w_temp = NULL;
-
-    }
-     */
-
-    Perceptron_t model = newSimplePerceptron();
+    Perceptron_t model = newSimplePerceptron(NULL);
 
     return model;
 
 }
 
-/*
-void PerceptronModel_free(PerceptronModel model) {
-    if (model->discrete_w) {
-        deleteVector(model->discrete_w);
-        deleteVector(model->discrete_w_avg);
-        deleteVector(model->discrete_w_temp);
-    }
-
-    if (model->embedding_w) {
-        deleteVector(model->embedding_w);
-        deleteVector(model->embedding_w_avg);
-        deleteVector(model->embedding_w_temp);
-        deleteVector(model->embedding_w_best);
-    }
-}
-*/
 
 void printfarch(int *parent, int len) {
     log_info("There are %d archs in total", len);
