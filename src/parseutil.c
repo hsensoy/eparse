@@ -24,6 +24,7 @@ extern int polynomial_degree;
 extern float bias;
 extern float rbf_lambda;
 extern int num_rand_sv;
+extern FeatureTransformer_t ft;
 
 void dump_conll_word(Word w, bool true_parent, FILE* ofp) {
 
@@ -173,8 +174,14 @@ Perceptron_t optimize(int max_numit, int max_rec, const char* path, const char* 
     Perceptron_t model = NULL;
     
     if (type == SIMPLE_PERCEPTRON) {
+        
+        #ifdef	OPTIMIZED_TRANSFORMATION
+        log_info("Creating a averaged perceptron model with optimized feature transformation.");
+        model = newSimplePerceptron(ft);
+        #else
         log_info("Creating a averaged perceptron model");
-        model = newSimplePerceptron();
+        model = newSimplePerceptron(NULL);
+        #endif
         //model = create_PerceptronModel(train->transformed_embedding_length, NULL);
     }
     else {

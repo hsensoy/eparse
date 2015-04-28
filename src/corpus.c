@@ -532,68 +532,61 @@ void setAdjacencyMatrix(CoNLLCorpus corpus, int sentence_idx, Perceptron_t kp, b
     if (sentence->adjacency_matrix == NULL)
         sentence->adjacency_matrix = square_adjacency_matrix(length + 1, NEGATIVE_INFINITY);
 	
-#ifdef	BATCH_SCORE
+    #ifdef	BATCH_SCORE
 	Matrix_t all = NULL;
 	Vector_t vscore = NULL;
 	
-    for (int _from = 0; _from <= length; _from++) {
-        for (int _to = 1; _to <= length; _to++)
-            if (_to != _from) {
-
-                EPARSE_CHECK_RETURN(embedding_feature(sentence, _from, _to, xformed_embedding_v))
-					
-				EPARSE_CHECK_RETURN(hstack(&all, memoryCPU, "all embeddings", xformed_embedding_v, false, false))
-            }
-
-    }
+        for (int _from = 0; _from <= length; _from++) {
+            for (int _to = 1; _to <= length; _to++)
+                if (_to != _from) {
+                    EPARSE_CHECK_RETURN(embedding_feature(sentence, _from, _to, xformed_embedding_v))
+    					
+    	            EPARSE_CHECK_RETURN(hstack(&all, memoryCPU, "all embeddings", xformed_embedding_v, false, false))
+                }
+        }
 	
 	debug("hstack is done");
 
-    if (ft != NULL){
-        Matrix_t all_nl = NULL;
+        if (ft != NULL){
+            Matrix_t all_nl = NULL;
 
+            #ifdef OPTIMIZED_TRANSFORMATION
+                EPARSE_CHECK_RETURN(scoreBatch(kp, all_nl, use_avg_alpha, &(vscore)))
+            #else
+                debug("Transforming batch...");
+                EPARSE_CHECK_RETURN(transformBatch(ft,all, &all_nl))
+                debug("Transformed batch...");
 
-        debug("Transforming batch...");
-        EPARSE_CHECK_RETURN(transformBatch(ft,all, &all_nl))
-        debug("Transformed batch...");
+                EPARSE_CHECK_RETURN(scoreBatch(kp, all_nl, use_avg_alpha, &(vscore)))
+            #endif
 
-        EPARSE_CHECK_RETURN(scoreBatch(kp, all_nl, use_avg_alpha, &(vscore)))
-
-        //printMatrix("Scores", vscore,stdout);
-
-        deleteMatrix(all_nl);
-    }
-    else
-    {
-
-        EPARSE_CHECK_RETURN(scoreBatch(kp, all, use_avg_alpha, &(vscore)))
-    }
-		
-	long idx = 0;
-    for (int _from = 0; _from <= length; _from++) {
-        for (int _to = 1; _to <= length; _to++)
-            if (_to != _from) {
-		debug("Score[%d,%d]=%f",_from,_to,(vscore->data)[idx++]);
-                (sentence->adjacency_matrix)[_from][_to] = (vscore->data)[idx++];
-            }
-    }
-	
-	deleteMatrix(all);
-	deleteVector(vscore);
-#else
-
-    for (int _from = 0; _from <= length; _from++) {
-        for (int _to = 1; _to <= length; _to++)
-            if (_to != _from) {
-
-                EPARSE_CHECK_RETURN(embedding_feature(sentence, _from, _to, xformed_embedding_v))
-
-			    EPARSE_CHECK_RETURN(score(kp, xformed_embedding_v, use_avg_alpha, &((sentence->adjacency_matrix)[_from][_to])))
-
-            }
-
-    }
-#endif
+            deleteMatrix(all_nl);
+        }
+        else
+        {
+            EPARSE_CHECK_RETURN(scoreBatch(kp, all, use_avg_alpha, &(vscore)))
+        }
+    		
+    	long idx = 0;
+        for (int _from = 0; _from <= length; _from++) {
+            for (int _to = 1; _to <= length; _to++)
+                if (_to != _from) {
+    	            debug("Score[%d,%d]=%f",_from,_to,(vscore->data)[idx++]);
+                    (sentence->adjacency_matrix)[_from][_to] = (vscore->data)[idx++];
+                }
+        }
+    	
+    	deleteMatrix(all);
+    	deleteVector(vscore);
+    #else
+        for (int _from = 0; _from <= length; _from++) {
+            for (int _to = 1; _to <= length; _to++)
+                if (_to != _from) {
+                    EPARSE_CHECK_RETURN(embedding_feature(sentence, _from, _to, xformed_embedding_v))
+    	            EPARSE_CHECK_RETURN(score(kp, xformed_embedding_v, use_avg_alpha, &((sentence->adjacency_matrix)[_from][_to])))
+                }
+        }
+    #endif
 
 
 }
