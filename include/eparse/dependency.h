@@ -15,6 +15,7 @@
 #include "stringalgo.h"
 #include "util.h"
 #include "perceptron.h"
+#include "feattemplate.h"
 
 #include <math.h>
 #include <stdlib.h>

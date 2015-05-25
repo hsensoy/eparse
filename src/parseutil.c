@@ -1,7 +1,6 @@
 
 #include "parseutil.h"
 
-
 static bool keepRunning = true;
 
 void intHandler(int dummy) {
@@ -143,7 +142,7 @@ ParserTestMetric testPerceptron (Perceptron_t mdl, const CoNLLCorpus corpus, boo
 
 
 
-Perceptron_t optimize(int max_numit, int max_rec, const char* path, const char* train_sections_str, const char* dev_sections_str, int embedding_dimension) {
+Perceptron_t optimize(int max_numit, int max_rec, const char* path, const char* train_sections_str, const char* dev_sections_str) {
     DArray *train_sections = parse_range(train_sections_str);
     DArray *dev_sections = parse_range(dev_sections_str);
 
@@ -151,11 +150,11 @@ Perceptron_t optimize(int max_numit, int max_rec, const char* path, const char* 
 
     log_info("Development sections to be used in %s: %s", path, join_range(dev_sections));
 
-    CoNLLCorpus dev = create_CoNLLCorpus(path, dev_sections, embedding_dimension, NULL);
+    CoNLLCorpus dev = create_CoNLLCorpus(path, dev_sections);
 
     log_info("Training sections to be used in %s: %s", path, join_range(train_sections));
 
-    CoNLLCorpus train = create_CoNLLCorpus(path, train_sections, embedding_dimension, NULL);
+    CoNLLCorpus train = create_CoNLLCorpus(path, train_sections);
 
     log_info("Reading training corpus");
     read_corpus(train, max_rec, false);
@@ -262,14 +261,14 @@ error:
 }
 
 
-void parseall(Perceptron_t model, const char* path, const char* test_sections_str, int embedding_dimension) {
+void parseall(Perceptron_t model, const char* path, const char* test_sections_str) {
     DArray *test_sections = parse_range(test_sections_str);
 
     signal(SIGINT, intHandler);
 
     log_info("Test sections to be used in %s: %s", path, join_range(test_sections));
 
-    CoNLLCorpus test = create_CoNLLCorpus(path, test_sections, embedding_dimension, NULL);
+    CoNLLCorpus test = create_CoNLLCorpus(path, test_sections);
 
     log_info("Reading test corpus");
     read_corpus(test, -1,false);
