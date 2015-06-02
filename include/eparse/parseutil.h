@@ -36,20 +36,18 @@ extern "C" {
  * @param path ConLL base directory path
  * @param train_sections_str Training sections
  * @param dev_sections_str Development sections
- * @param embedding_dimension Embedding dimension per word
  * 
  * @return Model trained
  */
-Perceptron_t optimize(int max_numit, int max_rec, const char* path, const char* train_sections_str, const char* dev_sections_str, int embedding_dimension);
+Perceptron_t optimize(int max_numit, int max_rec, const char* path, const char* train_sections_str, const char* dev_sections_str);
 
 /**
  * 
  * @param model Abstract perceptron model (Perceptron/KernelPerceptron)
  * @param path
  * @param test_sections_str
- * @param embedding_dimension
  */
-void parseall(Perceptron_t model, const char* path, const char* test_sections_str, int embedding_dimension);
+void parseall(Perceptron_t model, const char* path, const char* test_sections_str);
 
 #endif	/* PARSEUTIL_H */
 
