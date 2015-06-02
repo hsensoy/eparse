@@ -328,7 +328,9 @@ featureTemplateError_t arc_feature_vector(FeatureTemplate_t ft, FeaturedSentence
                 }
             } else {
 
-                sprintf(disc_feature, "parent=%s_between=%s_child=%s", p_postag, b_none, c_postag);
+                b_postag = b_none;
+
+                sprintf(disc_feature, "parent=%s_between=%s_child=%s", p_postag, b_postag, c_postag);
 
                 long indx = (long) (murmurhash(disc_feature, (uint32_t) strlen(disc_feature), SEED) %
                                     (ft->ndisc_feature));
@@ -361,7 +363,6 @@ featureTemplateError_t arc_feature_vector(FeatureTemplate_t ft, FeaturedSentence
                 int n = 0;
 
                 for (int b = MIN(from, to); b <= MAX(from, to); b++) {
-
 
                     //log_info("from=%d, to=%d, b=%d",MIN(from, to),vMAX(from, to), b);
                     Vector_t b_vec = ((Word) DArray_get(sent->words, b - 1))->embedding;
