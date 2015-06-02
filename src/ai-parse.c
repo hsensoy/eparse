@@ -16,7 +16,15 @@
 
 #include <string.h>
 
-#define VERSION "v0.9.9.0 (Thomas Jefferson)"
+#define VERSION "0.0.5 (James Madison)"
+
+#ifdef NDEBUG
+    #define EPARSE_PROMPT "\n\nLaunching:" "\n" "eparse " VERSION " - " "Production" "\n"\
+"With Linear/Kernel Perceptron, RBF Sampler, Feature Templates\nFirst-Order Projective MST parsing options"  "\n\n"
+#else
+    #define EPARSE_PROMPT "\n\nLaunching:" "\n" "eparse " VERSION " - " "Debug" "\n"\
+"With Linear/Kernel Perceptron, RBF Sampler, Feature Templates\nFirst-Order Projective MST parsing options"  "\n\n"
+#endif
 
 
 #define DEFAULT_MAX_NUMIT 50
@@ -50,13 +58,14 @@ int budget_target = 50000;
 int polynomial_degree = 4;
 float bias = 1.0;
 float rbf_lambda = 0.025;
-int edimension = 0;
 
 int verbosity = 0;
 
 int num_rand_sv = 300000;
 
 FeatureTransformer_t ft = NULL;
+
+FeatureTemplate_t feattemp;
 
 
 //Rate parser_rate = NULL;
@@ -81,11 +90,7 @@ int main(int argc, char** argv) {
 
     long nfeatures = DEFAULT_MAX_FEATURE_NUM;
 
-#ifdef NDEBUG
-    log_info("ai-parse %s (Release)", VERSION);
-#else
-    log_info("ai-parse %s (Debug)", VERSION);
-#endif
+    log_info("%s",EPARSE_PROMPT);
 
     struct argparse_option options[] = {
         OPT_HELP(),
@@ -98,7 +103,7 @@ int main(int argc, char** argv) {
         OPT_STRING('t', "training", &training, "Training sections for optimize and train. Apply sections for parse", NULL),
         OPT_STRING('d', "development", &dev, "Development sections for optimize", NULL),
         OPT_STRING('e', "epattern", &epattern, "Embedding Patterns", NULL),
-        OPT_INTEGER('l', "edimension", &edimension, "Embedding dimension", NULL),
+        //OPT_INTEGER('l', "edimension", &edimension, "Embedding dimension", NULL),
         OPT_INTEGER('m', "maxrec", &maxrec, "Maximum number of training instance", NULL),
         OPT_INTEGER('f', "maxfeat", &nfeatures, "Maximum number of features (including linear and non-linear ones)", NULL),
         OPT_STRING('x', "etransform", &etransform_str, "Embedding Transformation", NULL),
@@ -107,8 +112,8 @@ int main(int argc, char** argv) {
         OPT_INTEGER('c', "concurrency", &num_parallel_mkl_slaves, "Parallel MKL Slaves. Default is 90% of all machine cores", NULL),
         OPT_INTEGER('b', "degree", &polynomial_degree, "Degree of polynomial kernel. Default is 4", NULL),
         OPT_STRING('z', "sigma", &rbf_lambda_str, "Sigma multiplier for RBF Kernel.Default value is 0.025"),
-        OPT_STRING('u', "budget_type", &budget_type_str, "Budget control methods. NONE|RANDOM", NULL),
-        OPT_INTEGER('g', "budget_size", &budget_target, "Budget Target for budget based perceptron algorithms. Default 50K", NULL),
+        //OPT_STRING('u', "budget_type", &budget_type_str, "Budget control methods. NONE|RANDOM", NULL),
+        //OPT_INTEGER('g', "budget_size", &budget_target, "Budget Target for budget based perceptron algorithms. Default 50K", NULL),
         OPT_END(),
     };
     struct argparse argparse;
@@ -148,8 +153,6 @@ int main(int argc, char** argv) {
 
     check(path != NULL, "Specify a ConLL base directory using -p");
 
-    check(edimension != 0, "Set embedding dimension using -l");
-
     check(modelname != NULL, "Provide model name using -o");
 
     if (budget_type_str != NULL) {
@@ -182,6 +185,8 @@ int main(int argc, char** argv) {
     }
 
     check(epattern != NULL, "Embedding pattern is required for -s optimize,train,parse");
+
+    feattemp= createFeatureTemplate(epattern,500);
 
     if (rbf_lambda_str != NULL) {
         rbf_lambda = (float) atof(rbf_lambda_str);
@@ -240,7 +245,7 @@ int main(int argc, char** argv) {
     }
 
     if (strcmp(stage, "optimize") == 0) {
-        Perceptron_t model = optimize(maxnumit, maxrec, path, training, dev, edimension);
+        Perceptron_t model = optimize(maxnumit, maxrec, path, training, dev);
 
         char* model_filename = (char*) malloc(sizeof (char) * (strlen(modelname) + 7));
         check_mem(model_filename);
@@ -277,7 +282,7 @@ int main(int argc, char** argv) {
 
         log_info("Model loaded from %s successfully", model_filename);
 
-        parseall(model, path, training, edimension);
+        parseall(model, path, training);
     } else {
         log_info("Waiting for implementation");
     }
