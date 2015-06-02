@@ -16,7 +16,15 @@
 
 #include <string.h>
 
-#define VERSION "v0.9.9.0 (Thomas Jefferson)"
+#define VERSION "0.0.5 (James Madison)"
+
+#ifdef NDEBUG
+    #define EPARSE_PROMPT "\n\nLaunching:" "\n" "eparse " VERSION " - " "Production" "\n"\
+"With Linear/Kernel Perceptron, RBF Sampler, Feature Templates\nFirst-Order Projective MST parsing options"  "\n\n"
+#else
+    #define EPARSE_PROMPT "\n\nLaunching:" "\n" "eparse " VERSION " - " "Debug" "\n"\
+"With Linear/Kernel Perceptron, RBF Sampler, Feature Templates\nFirst-Order Projective MST parsing options"  "\n\n"
+#endif
 
 
 #define DEFAULT_MAX_NUMIT 50
@@ -82,11 +90,7 @@ int main(int argc, char** argv) {
 
     long nfeatures = DEFAULT_MAX_FEATURE_NUM;
 
-#ifdef NDEBUG
-    log_info("ai-parse %s (Release)", VERSION);
-#else
-    log_info("ai-parse %s (Debug)", VERSION);
-#endif
+    log_info("%s",EPARSE_PROMPT);
 
     struct argparse_option options[] = {
         OPT_HELP(),
