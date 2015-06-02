@@ -21,6 +21,8 @@ extern int verbosity;
 extern const char *modelname;
 extern int max_rec;
 
+extern FeatureTemplate_t feattemp;
+
 static int _nextval = 0;
 static int ***threewayindx = NULL;
 
@@ -610,16 +612,16 @@ static void dump_support_vectors(Perceptron_t mdl) {
     exit(EXIT_FAILURE);
 }
 
-void update_alpha(Perceptron_t kp, int sidx, int from, int to, struct FeaturedSentence *sent, float inc, Vector_t v) {
+static void update_alpha(Perceptron_t kp, int sidx, int from, int to, struct FeaturedSentence *sent, float inc) {
     int svKey;
+    static Vector_t v = NULL;
     if (kp->type == KERNEL_PERCEPTRON) {
         svKey = getSupportVectorIndex(threewayindx, sidx, from, to);
 
         if (svKey == -1) {
             // Add a new support vector instance.
 
-
-            EPARSE_CHECK_RETURN(embedding_feature(sent, from, to, v))
+            FEATURETEMPLATE_CHECK_RETURN(arc_feature_vector(feattemp,sent,from,to,&v))
 
 
             //int idx= add_sv(kp, kp->dummy_v,inc);
@@ -634,13 +636,13 @@ void update_alpha(Perceptron_t kp, int sidx, int from, int to, struct FeaturedSe
         svKey = -1;
 
         if (ft == NULL) {
-            EPARSE_CHECK_RETURN(embedding_feature(sent, from, to, v))
+            FEATURETEMPLATE_CHECK_RETURN(arc_feature_vector(feattemp,sent,from,to,&v))
 
             EPARSE_CHECK_RETURN(update(kp, v, svKey, inc));
         } else {
             Vector_t raw = NULL;
 
-            EPARSE_CHECK_RETURN(embedding_feature(sent, from, to, v))
+            FEATURETEMPLATE_CHECK_RETURN(arc_feature_vector(feattemp,sent,from,to,&v))
 
             EPARSE_CHECK_RETURN(transform(ft, v, &raw))
 
@@ -673,10 +675,6 @@ void trainPerceptronOnce(Perceptron_t mdl, const CoNLLCorpus corpus, int max_rec
 
     int *model = (int *) malloc(sizeof(int) * 300);
     int *empirical = (int *) malloc(sizeof(int) * 300);
-
-    Vector_t dummy_v = NULL;
-
-    newInitializedCPUVector(&dummy_v, "Dummy Vector", corpus->transformed_embedding_length, matrixInitNone, NULL, NULL)
 
     if (threewayindx == NULL && mdl->type == KERNEL_PERCEPTRON) {
         //TODO: Fix this by realloc
@@ -724,9 +722,9 @@ void trainPerceptronOnce(Perceptron_t mdl, const CoNLLCorpus corpus, int max_rec
 
                 if (model[to] != empirical[to]) {
 
-                    update_alpha(mdl, si, model[to], to, sent, -1, dummy_v);
+                    update_alpha(mdl, si, model[to], to, sent, -1);
 
-                    update_alpha(mdl, si, empirical[to], to, sent, +1, dummy_v);
+                    update_alpha(mdl, si, empirical[to], to, sent, +1);
 
                 }
 
@@ -787,7 +785,6 @@ void trainPerceptronOnce(Perceptron_t mdl, const CoNLLCorpus corpus, int max_rec
     free(empirical);
 
     deleteProgress(pparse);
-    deleteVector(dummy_v);
 
     return;
 

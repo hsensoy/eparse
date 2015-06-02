@@ -24,7 +24,7 @@
 
 #include "conll.h"
 #include "featuretransform.h"
-
+#include "feattemplate.h"
 
 
 #ifdef __GNUC__
@@ -34,12 +34,8 @@
 #define NEGATIVE_INFINITY (-(FLT_MAX - 10.))
 #define EXAMPLE_CONLL_DIR "/Users/husnusensoy/uparse/data/nlp/treebank/treebank-2.0/combined/conll"
 
-#define  STOP  "<STOP>"
-#define START  "*"
-//static const char* ROOT = "root";
 
-
-#define IS_ARC_VALID(from,to, length,section) check((from) != (to) && (from) <= (length) && (from) >= 0 && (to)>= 1 && (to) <= (length), "Arc between suspicious words %d to %d for section %u sentence length %d", (from), (to),(section), (length))
+#define CONLL_EMBEDDING_INDEX 10
 
 struct Word {
     int id;
@@ -63,33 +59,14 @@ struct CoNLLCorpus {
 
     DArray *sentences;
 
-    bool hasembeddings;
-    DArray *disrete_patterns_parts;
-
-    Word Root;
-    int word_embedding_dimension;
-    long transformed_embedding_length;
 };
 
 typedef struct CoNLLCorpus* CoNLLCorpus;
 
 
-
-
-
-
-
-struct EmbeddingPattern {
-    int offset;
-    char node;
-    char subnode;
-};
-
-typedef struct EmbeddingPattern* EmbeddingPattern;
-
-
-
-CoNLLCorpus create_CoNLLCorpus(const char* base_dir, DArray *sections, int embedding_dimension, DArray* discrete_patterns) ;
+CoNLLCorpus create_CoNLLCorpus(const char* base_dir, DArray *sections);
+Word parse_word(char* line);
+Vector_t parse_vector(char *buff);
 void read_corpus(CoNLLCorpus coprus, int max_sent, bool build_feature_matrix);
 
 void free_CoNLLCorpus(CoNLLCorpus corpus, bool free_feature_matrix);
@@ -103,11 +80,10 @@ void FeatureSentence_free(FeaturedSentence sent, bool free_words);
 
 void free_feature_matrix(CoNLLCorpus corpus, int sentence_idx);
 
-void build_adjacency_matrix(CoNLLCorpus corpus, int sentence_idx, Vector_t embeddings_w, Vector_t discrete_w);
+
 void setAdjacencyMatrix(CoNLLCorpus corpus, int sentence_idx, Perceptron_t kp, bool use_avg_alpha);
 
 void free_FeaturedSentence(CoNLLCorpus corpus, int sentence_idx);
 
-eparseError_t embedding_feature(FeaturedSentence sent, int from, int to, Vector_t target);
 
 #endif
