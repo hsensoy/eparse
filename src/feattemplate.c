@@ -365,7 +365,9 @@ featureTemplateError_t arc_feature_vector(FeatureTemplate_t ft, FeaturedSentence
                 for (int b = MIN(from, to); b <= MAX(from, to); b++) {
 
                     //log_info("from=%d, to=%d, b=%d",MIN(from, to),vMAX(from, to), b);
+		    if ( b > 0 ){
                     Vector_t b_vec = ((Word) DArray_get(sent->words, b - 1))->embedding;
+			
 
                     float *vdata = NULL;
                     long vlength;
@@ -374,8 +376,11 @@ featureTemplateError_t arc_feature_vector(FeatureTemplate_t ft, FeaturedSentence
 
                     for (long bi = 0; bi < vlength; bi++)
                         (ft->avg_v->data)[bi] += (vdata)[bi];
+		    
+  		    }
 
                     n++;
+			
                 }
 
                 for (long bi = 0; bi < ft->avg_v->n; bi++)
