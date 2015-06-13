@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
     Vector_t v = NULL;
     for (int j = 0; j < 4; ++j) {
 
-        feattemp = createFeatureTemplate(template[j], 0);
+        feattemp = createFeatureTemplate(template[j], NULL,0);
 
         debug("%s feature template is creeated", template[j]);
 

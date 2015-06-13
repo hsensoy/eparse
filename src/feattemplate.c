@@ -8,7 +8,51 @@ static const char *ROOT = "*";
 static const char *b_none = "-";
 
 
-static featureTemplateError_t init_ft_arrays(FeatureTemplate_t *ft, int n, uint32_t n_disc_feature) {
+static void load_disc_feature_hashmap(FeatureTemplate_t pSt, const char *feature_file, int max_feature) {
+    FILE *fp = fopen(feature_file, "r");
+    check(fp != NULL, "%s could not opened", feature_file);
+
+    ssize_t read;
+    char *line = NULL;
+    size_t len = 0;
+
+    DArray *features = DArray_create(sizeof(char *), 3);
+    check(features != NULL, "Darray allocatino error");
+
+    while ((read = getline(&line, &len, fp)) != -1) {
+
+        if (strcmp(line, "\n") != 0) {
+
+            DArray *tokens = split(line, "\t");
+
+            check(DArray_count(tokens) == 3, "%s does not have 3 tokens", line);
+
+            int feature_idx = atoi((char *) DArray_get(tokens, 0));
+            char *feature = (char *) DArray_get(tokens, 1);
+
+            DArray_push(features, strdup(feature));
+
+            log_info("%s:%d", feature, feature_idx);
+
+            putHashmap(pSt->disc, feature, feature_idx);
+
+
+            //DArray_clear(tokens);
+
+        }
+
+        if (max_feature > 0 && lenHashmap(pSt->disc) == max_feature)
+            break;
+    }
+
+    return;
+
+    error:
+    exit(EXIT_FAILURE);
+
+}
+
+static featureTemplateError_t init_ft_struct(FeatureTemplate_t *ft, int n) {
     *ft = (FeatureTemplate_t) malloc(sizeof(struct FeatureTemplate_st));
 
     if (*ft == NULL)
@@ -25,9 +69,8 @@ static featureTemplateError_t init_ft_arrays(FeatureTemplate_t *ft, int n, uint3
 
     (*ft)->avg_v = NULL;
 
-    (*ft)->ndisc_feature = (n_disc_feature > 0) ? n_disc_feature : DEFAULT_N_DISC_FEATURE;
-    (*ft)->disc = NULL;
-
+    (*ft)->disc = newStringHashMap();
+    (*ft)->disc_v = NULL;
 
     if ((*ft)->offset == NULL || (*ft)->type == NULL || (*ft)->start == NULL || (*ft)->end == NULL ||
         (*ft)->node == NULL)
@@ -138,12 +181,12 @@ static featureTemplateError_t add_template_piece(const char *pattern, int index,
 }
 
 
-FeatureTemplate_t createFeatureTemplate(const char *templatestr, uint32_t max_feature) {
+FeatureTemplate_t createFeatureTemplate(const char *templatestr, const char *disc_feature_file, int max_disc_feature) {
     FeatureTemplate_t ft = NULL;
 
     DArray *patterns = split(templatestr, "_");
 
-    FEATURETEMPLATE_CHECK_RETURN(init_ft_arrays(&ft, DArray_count(patterns), max_feature))
+    FEATURETEMPLATE_CHECK_RETURN(init_ft_struct(&ft, DArray_count(patterns)))
 
     for (int pi = 0; pi < DArray_count(patterns); pi++) {
         char *pattern = (char *) DArray_get(patterns, pi);
@@ -152,8 +195,8 @@ FeatureTemplate_t createFeatureTemplate(const char *templatestr, uint32_t max_fe
 
     }
 
-    //todo: Some idiot malloc fault.
-    //DArray_clear_destroy(patterns);
+    if (disc_feature_file != NULL)
+        load_disc_feature_hashmap(ft, disc_feature_file, max_disc_feature);
 
 
     return ft;
@@ -176,7 +219,7 @@ featureTemplateError_t arc_feature_vector(FeatureTemplate_t ft, FeaturedSentence
     float zero = 0.f;
 
     newInitializedCPUVector(target, "Dense Feature Vector", 0, matrixInitFixed, &zero, NULL)
-    newInitializedCPUVector(&(ft->disc), "Discrete Dense Vector", ft->ndisc_feature, matrixInitFixed, &zero, NULL)
+    newInitializedCPUVector(&(ft->disc_v), "Discrete Dense Vector", lenHashmap(ft->disc), matrixInitFixed, &zero, NULL)
 
     debug("%s matrix(%ldx%ld) of %ld elements", (*target)->identifier, (*target)->nrow, (*target)->ncol, (*target)->n);
 
@@ -287,24 +330,17 @@ featureTemplateError_t arc_feature_vector(FeatureTemplate_t ft, FeaturedSentence
 
             }
 
+            int indx = 0;
+            if (getHashmap(ft->disc, disc_feature, &indx) == hashMapSucces)
+                (ft->disc_v->data)[indx]++;
+
             there_is_discrete = true;
-
-            long indx = (long) (murmurhash(disc_feature, (uint32_t) strlen(disc_feature), SEED) %
-                                (ft->ndisc_feature));
-
-            debug("%s->%ld", disc_feature, indx);
-
-            (ft->disc->data)[indx]++;
-
-
         }
         else if ((ft->type)[pi] == FT_BETWEEN_POSTAG) {
 
 
-            char *p_postag, *b_postag, *c_postag;
+            char *b_postag;
 
-            p_postag = (from > 0) ? ((Word) DArray_get(sent->words, from - 1))->postag : ROOT;
-            c_postag = (to <= sent->length) ? ((Word) DArray_get(sent->words, to - 1))->postag : ROOT;
 
             if (abs(from - to) > 1) {
 
@@ -317,27 +353,21 @@ featureTemplateError_t arc_feature_vector(FeatureTemplate_t ft, FeaturedSentence
                     char *b_postag = ((Word) DArray_get(sent->words, b - 1))->postag;
 
 
-                    sprintf(disc_feature, "parent=%s_between=%s_child=%s", p_postag, b_postag, c_postag);
+                    sprintf(disc_feature, "between=%s", b_postag);
 
-                    long indx = (long) (murmurhash(disc_feature, (uint32_t) strlen(disc_feature), SEED) %
-                                        (ft->ndisc_feature));
-
-                    debug("%s->%ld", disc_feature, indx);
-
-                    (ft->disc->data)[indx]++;
+                    int indx = 0;
+                    if (getHashmap(ft->disc, disc_feature, &indx) == hashMapSucces)
+                        (ft->disc_v->data)[indx]++;
                 }
             } else {
 
                 b_postag = b_none;
 
-                sprintf(disc_feature, "parent=%s_between=%s_child=%s", p_postag, b_postag, c_postag);
+                sprintf(disc_feature, "between=%s", b_postag);
 
-                long indx = (long) (murmurhash(disc_feature, (uint32_t) strlen(disc_feature), SEED) %
-                                    (ft->ndisc_feature));
-
-                debug("%s->%ld", disc_feature, indx);
-
-                (ft->disc->data)[indx]++;
+                int indx = 0;
+                if (getHashmap(ft->disc, disc_feature, &indx) == hashMapSucces)
+                    (ft->disc_v->data)[indx]++;
 
             }
 
@@ -365,17 +395,22 @@ featureTemplateError_t arc_feature_vector(FeatureTemplate_t ft, FeaturedSentence
                 for (int b = MIN(from, to); b <= MAX(from, to); b++) {
 
                     //log_info("from=%d, to=%d, b=%d",MIN(from, to),vMAX(from, to), b);
-                    Vector_t b_vec = ((Word) DArray_get(sent->words, b - 1))->embedding;
+                    if (b > 0) {
+                        Vector_t b_vec = ((Word) DArray_get(sent->words, b - 1))->embedding;
 
-                    float *vdata = NULL;
-                    long vlength;
 
-                    VIRTUAL_SUBVECTOR(b_vec, start, end)
+                        float *vdata = NULL;
+                        long vlength;
 
-                    for (long bi = 0; bi < vlength; bi++)
-                        (ft->avg_v->data)[bi] += (vdata)[bi];
+                        VIRTUAL_SUBVECTOR(b_vec, start, end)
+
+                        for (long bi = 0; bi < vlength; bi++)
+                            (ft->avg_v->data)[bi] += (vdata)[bi];
+
+                    }
 
                     n++;
+
                 }
 
                 for (long bi = 0; bi < ft->avg_v->n; bi++)

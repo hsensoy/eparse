@@ -11,10 +11,21 @@ FILE( GLOB_RECURSE PROJ_SOURCES src/*.c )
 #FILE( GLOB_RECURSE PROJ_TEST_SOURCES src/*.c )
 #FILE( REMOVE PROJ_TEST_SOURCES src/ai-parse.c )
 #FILE( GLOB_RECURSE PROJ_HEADERS include/${PROJ_NAME}/*.h)
-SET( PROJ_INCLUDES "include" "include/eparse"  "/usr/local/include/perceptron/epblas" "/usr/local/include/perceptron" "/usr/local/include/shared")
-SET( PROJ_LIBRARIES "/usr/local/lib/shared/libshared.a" "m" "/usr/local/lib/perceptronmkl/libperceptronmkl.dylib" )
+SET( FRAMEWORK "mkl")
+link_directories(/usr/local/lib/perceptronmkl)
 
-SET( CMAKE_EXE_LINKER_FLAGS " -O3 -std=gnu99 -L/usr/local/lib/perceptronmkl -lperceptronmkl -lm " CACHE STRING "" FORCE )
+SET( PROJ_INCLUDES "include" "include/eparse"  "/usr/local/include/perceptron/epblas" "/usr/local/include/perceptron" "/usr/local/include/shared")
+SET( PROJ_LIBRARIES "/usr/local/lib/shared/libshared.a" "m"  )
+
+IF( FRAMEWORK EQUAL "cuda" )
+  SET( PROJ_LIBRARIES ${PROJ_LIBRARIES} "/usr/local/cuda/lib64/libcurand.so" )
+  SET( CMAKE_EXE_LINKER_FLAGS " -O3 -std=gnu99 -lperceptron${FRAMEWORK} -lm -lcurand" CACHE STRING "" FORCE )
+ELSE( FRAMEWORK EQUAL "cuda" )
+    SET( CMAKE_EXE_LINKER_FLAGS " -O3 -std=gnu99 -lperceptron${FRAMEWORK} -lm" CACHE STRING "" FORCE )
+ENDIF( FRAMEWORK EQUAL "cuda" )
+
+
+
 SET( CMAKE_C_FLAGS "-std=gnu99  -O3 -g -DBATCH_SCORE -DNDEBUG")
 #SET (${PROJ_NAME}_VERSION_MAJOR 0)
 #SET (${PROJ_NAME}_VERSION_MINOR 1)
@@ -31,9 +42,12 @@ SET ( PROJ_TESTS
 
 foreach( t ${PROJ_TESTS} )
        add_executable( test_${PROJ_NAME}_${t} tests/${t}.c src/corpus.c src/feattemplate.c src/dependency.c src/parseutil.c src/conll.c src/murmurhash.c)
-           target_link_libraries( test_${PROJ_NAME}_${t} "perceptronmkl")
+           target_link_libraries( test_${PROJ_NAME}_${t} "perceptron${FRAMEWORK}")
 
           target_link_libraries( test_${PROJ_NAME}_${t} "/usr/local/lib/shared/libshared.a")
+          IF( FRAMEWORK EQUAL "cuda" )
+          target_link_libraries( test_${PROJ_NAME}_${t} "/usr/local/cuda/lib64/libcurand.so")
+          ENDIF(FRAMEWORK EQUAL "cuda")
                add_test( test_${PROJ_NAME}_${t}  ./test_${PROJ_NAME}_${t} )
 endforeach(t)
 #set (CMAKE_INSTALL_PREFIX /home/hsensoy/ai-lab)
