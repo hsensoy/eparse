@@ -1,4 +1,9 @@
 ###eparse version 0.0.6, released 14 June 2015
+####Bugfixes Features
+    * vappend error in appending discrete feature vector to feature vector
+    * Minor logging changes for discrete features
+    * CMakeFile.txt is more flexible to handle MKL and CUDA
+###eparse version 0.0.6, released 14 June 2015
 ####New Features
     * Discrete features of PosTags (exact via DictVectorizer) are now available by dense vectors.
     * `dep_disc_features.py` can be used to generate those features (in-complete)
