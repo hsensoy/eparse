@@ -32,7 +32,7 @@ static void load_disc_feature_hashmap(FeatureTemplate_t pSt, const char *feature
 
             DArray_push(features, strdup(feature));
 
-            log_info("%s:%d", feature, feature_idx);
+            debug("%s:%d", feature, feature_idx);
 
             putHashmap(pSt->disc, feature, feature_idx);
 
@@ -45,6 +45,7 @@ static void load_disc_feature_hashmap(FeatureTemplate_t pSt, const char *feature
             break;
     }
 
+    log_info("%ld discrete features are loaded info DictVect",lenHashmap(pSt->disc));
     return;
 
     error:
@@ -195,8 +196,12 @@ FeatureTemplate_t createFeatureTemplate(const char *templatestr, const char *dis
 
     }
 
-    if (disc_feature_file != NULL)
+    if (disc_feature_file != NULL) {
+        log_info("Features defined in %s file will be used", disc_feature_file);
         load_disc_feature_hashmap(ft, disc_feature_file, max_disc_feature);
+    }else{
+        log_info("No discrete features will be used");
+    }
 
 
     return ft;
@@ -487,7 +492,7 @@ featureTemplateError_t arc_feature_vector(FeatureTemplate_t ft, FeaturedSentence
     }
 
     if (there_is_discrete) {
-        EPARSE_CHECK_RETURN(vappend_vector(target, memoryCPU, "Dense Feature Vector", ft->disc))
+        EPARSE_CHECK_RETURN(vappend_vector(target, memoryCPU, "Dense Feature Vector", ft->disc_v))
     }
 
     // Add the bias term
