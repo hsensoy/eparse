@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
     Vector_t v = NULL;
     for (int j = 0; j < 1; ++j) {
 
-        feattemp = createFeatureTemplate(template[j], 15);
+        feattemp = createFeatureTemplate(template[j], NULL, 15);
 
         debug("%s feature template is creeated", template[j]);
 

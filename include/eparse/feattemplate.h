@@ -11,7 +11,7 @@
 #include "eputil.h"
 #include "datastructure.h"
 #include "corpus.h"
-#include "murmurhash.h"
+#include "chashmap.h"
 
 enum featureTemplateError_t {
     featureTemplateSucess = 0,
@@ -64,13 +64,14 @@ struct FeatureTemplate_st {
 
     //Intermediate structures for performance enhancements
     Vector_t avg_v;
-    Vector_t disc;
+    hashmap_t disc;
+    Vector_t disc_v;
 };
 
 
 typedef struct FeatureTemplate_st *FeatureTemplate_t;
 
-FeatureTemplate_t createFeatureTemplate(const char *templatestr,uint32_t max_feature);
+FeatureTemplate_t createFeatureTemplate(const char *templatestr,const char *disc_feature_file, int max_disc_feature);
 
 #define  STOP  "<STOP>"
 #define START  "*"
