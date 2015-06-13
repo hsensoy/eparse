@@ -11,14 +11,14 @@
 #include "debug.h"
 #include "parseutil.h"
 
-#define VERSION "0.0.5 (James Madison)"
+#define VERSION "0.0.6 (James Monroe)"
 
 #ifdef NDEBUG
 #define EPARSE_PROMPT "\n\nLaunching:" "\n" "eparse " VERSION " - " "Production" "\n"\
-"With Linear/Kernel Perceptron, RBF Sampler, Feature Templates\nFirst-Order Projective MST parsing options"  "\n\n"
+"With Linear/Kernel Perceptron, RBF Sampler, Feature Templates supporting embedding and PoSTag features\nFirst-Order Projective MST parsing options"  "\n\n"
 #else
     #define EPARSE_PROMPT "\n\nLaunching:" "\n" "eparse " VERSION " - " "Debug" "\n"\
-"With Linear/Kernel Perceptron, RBF Sampler, Feature Templates\nFirst-Order Projective MST parsing options"  "\n\n"
+"With Linear/Kernel Perceptron, RBF Sampler, Feature Templates supporting embedding and PoSTag features\nFirst-Order Projective MST parsing options"  "\n\n"
 #endif
 
 
