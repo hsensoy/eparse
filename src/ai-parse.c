@@ -11,7 +11,7 @@
 #include "debug.h"
 #include "parseutil.h"
 
-#define VERSION "0.0.6.1 (James Monroe)"
+#define VERSION "0.0.6.2 (James Monroe)"
 
 #ifdef NDEBUG
 #define EPARSE_PROMPT "\n\nLaunching:" "\n" "eparse " VERSION " - " "Production" "\n"\
