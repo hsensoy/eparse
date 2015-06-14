@@ -207,6 +207,23 @@ FeatureTemplate_t createFeatureTemplate(const char *templatestr, const char *dis
     return ft;
 }
 
+
+static inline void normalize(Vector_t v){
+
+    float norm2 = 0;
+
+    for (long i = 0; i < v->n; ++i) {
+        norm2 += (v->data)[i] * (v->data)[i];
+    }
+
+    norm2 = sqrtf(norm2);
+
+    for (long i = 0; i < v->n; ++i) {
+        (v->data)[i] /= norm2;
+    }
+
+}
+
 /**
  *
  * @param sent
@@ -492,6 +509,9 @@ featureTemplateError_t arc_feature_vector(FeatureTemplate_t ft, FeaturedSentence
     }
 
     if (there_is_discrete) {
+
+        normalize(ft->disc_v);
+
         EPARSE_CHECK_RETURN(vappend_vector(target, memoryCPU, "Dense Feature Vector", ft->disc_v))
     }
 
